@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 # 1. Konfigurasi Halaman agar Responsif
 st.set_page_config(
-    page_title="Pemantauan Gula Darah Mandiri",
+    page_title="Pemantauan Gula Darah Mandiri Sugiyo RH",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="collapsed"
