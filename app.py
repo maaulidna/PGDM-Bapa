@@ -3,6 +3,35 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# 1. Dictionary pemetaan ke inisial huruf
+mapping_waktu = {
+    'Sebelum Makan Pagi': 'A',
+    'Sesudah Makan Pagi': 'B',
+    'Sebelum Makan Siang': 'C',
+    'Sesudah Makan Siang': 'D',
+    'Sebelum Makan Malam': 'E',
+    'Sesudah Makan Malam': 'F',
+    'Sebelum Tidur Malam': 'G',
+}
+
+# 2. Terapkan ke kolom waktu di DataFrame
+df['waktu_kode'] = df['Waktu'].map(mapping_waktu)
+
+# 3. Urutkan data berdasarkan kode agar rapi
+df = df.sort_values(by=['Tanggal', 'waktu_kode'])
+
+# 4. Tampilkan grafik garis di Streamlit
+st.line_chart(df, x='waktu_kode', y='Gula Darah')
+
+# 5. Berikan legenda/keterangan di bawah grafik
+st.caption("""
+**Keterangan Sumbu X:**
+- **A**: Sebelum Makan Pagi | **B**: Sesudah Makan Pagi
+- **C**: Sebelum Makan Siang | **D**: Sesudah Makan Siang
+- **E**: Sebelum Makan Malam | **F**: Sesudah Makan Malam
+- **G**: Sebelum Tidur Malam
+""")
+
 # 1. Konfigurasi Halaman agar Responsif
 st.set_page_config(
     page_title="Pemantauan Gula Darah Mandiri Sugiyo RH",
