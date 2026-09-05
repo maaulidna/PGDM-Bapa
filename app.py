@@ -3,36 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# 1. Dictionary pemetaan ke inisial huruf
-mapping_waktu = {
-    'Sebelum Makan Pagi': 'A',
-    'Sesudah Makan Pagi': 'B',
-    'Sebelum Makan Siang': 'C',
-    'Sesudah Makan Siang': 'D',
-    'Sebelum Makan Malam': 'E',
-    'Sesudah Makan Malam': 'F',
-    'Sebelum Tidur Malam': 'G',
-}
-
-# 2. Terapkan ke kolom waktu di DataFrame
-df['waktu_kode'] = df['Waktu'].map(mapping_waktu)
-
-# 3. Urutkan data berdasarkan kode agar rapi
-df = df.sort_values(by=['Tanggal', 'waktu_kode'])
-
-# 4. Tampilkan grafik garis di Streamlit
-st.line_chart(df, x='waktu_kode', y='Gula Darah')
-
-# 5. Berikan legenda/keterangan di bawah grafik
-st.caption("""
-**Keterangan Sumbu X:**
-- **A**: Sebelum Makan Pagi | **B**: Sesudah Makan Pagi
-- **C**: Sebelum Makan Siang | **D**: Sesudah Makan Siang
-- **E**: Sebelum Makan Malam | **F**: Sesudah Makan Malam
-- **G**: Sebelum Tidur Malam
-""")
-
-# 1. Konfigurasi Halaman agar Responsif
+# 1. Konfigurasi Halaman (WAJIB di paling atas)
 st.set_page_config(
     page_title="Pemantauan Gula Darah Mandiri Sugiyo RH",
     page_icon="🩺",
@@ -40,37 +11,42 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Kustomisasi CSS untuk tampilan mobile yang nyaman
-st.markdown("""
-    <style>
-    .metric-card {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Pemetaan Waktu ke Inisial Huruf Alfabetis (A - G)
+MAPPING_WAKTU = {
+    'Sebelum Makan Pagi': 'A',
+    'Sesudah Makan Pagi': 'B',
+    'Sebelum Makan Siang': 'C',
+    'Sesudah Makan Siang': 'D',
+    'Sebelum Makan Malam': 'E',
+    'Sesudah Makan Malam': 'F',
+    'Sebelum Tidur Malam': 'G'
+}
 
 # 2. Fungsi Mengambil Data dari Google Sheets
-# Ganti SPREADSHEET_ID dengan ID dokumen Anda
 SPREADSHEET_ID = "1e39QSZP1nk9aLUfU4hpg4XgWjk-UB7edbo5m_FQObn4"
 SHEET_NAME = "Form%20Responses%201"
 
-@st.cache_data(ttl=60)  # Refresh otomatis setiap 60 detik
+@st.cache_data(ttl=60)  # Refresh data otomatis setiap 60 detik
 def load_data():
-    # URL ekspor CSV langsung dari Google Sheets (Pastikan akses sheet: 'Anyone with the link can view')
     csv_url = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={SHEET_NAME}"
     df = pd.read_csv(csv_url)
     
-    # Konversi tanggal
+    # Konversi tipe data
     df['Tanggal'] = pd.to_datetime(df['Tanggal'], errors='coerce', dayfirst=True)
     df['Gula Darah'] = pd.to_numeric(df['Gula Darah'], errors='coerce')
     df = df.dropna(subset=['Tanggal', 'Gula Darah'])
-    df = df.sort_values(by=['Tanggal', 'Timestamp'])
     
-    # Tambahkan kolom Minggu/Pekan
-    df['Minggu'] = df['Tanggal'].dt.to_period('W').apply(lambda r: f"{r.start_time.strftime('%d/%m')} - {r.end_time.strftime('%d/%m')}")
+    # Bersihkan spasi berlebih pada kolom Waktu dan buat kolom inisial alfabetis
+    df['Waktu_Bersih'] = df['Waktu'].astype(str).str.strip()
+    df['waktu_kode'] = df['Waktu_Bersih'].map(MAPPING_WAKTU).fillna('Z')
+    
+    # Urutkan secara kronologis berdasarkan Tanggal lalu Urutan Inisial Waktu (A -> G)
+    df = df.sort_values(by=['Tanggal', 'waktu_kode'])
+    
+    # Tambahkan kolom rentang mingguan
+    df['Minggu'] = df['Tanggal'].dt.to_period('W').apply(
+        lambda r: f"{r.start_time.strftime('%d/%m')} - {r.end_time.strftime('%d/%m')}"
+    )
     return df
 
 try:
@@ -88,10 +64,9 @@ with st.sidebar:
     st.header("🔍 Filter Data")
     min_date = data['Tanggal'].min().date()
     max_date = data['Tanggal'].max().date()
-    
     date_range = st.date_input("Pilih Rentang Tanggal:", [min_date, max_date])
     
-    list_waktu = ["Semua"] + list(data['Waktu'].dropna().unique())
+    list_waktu = ["Semua"] + sorted([w for w in data['Waktu'].dropna().unique()])
     selected_waktu = st.selectbox("Pilih Waktu Pemeriksaan:", list_waktu)
 
 # Terapkan Filter
@@ -107,12 +82,9 @@ if selected_waktu != "Semua":
 st.markdown("### 📊 Ringkasan")
 col1, col2, col3, col4 = st.columns(4)
 
-# Hitung Rata-rata 7 Hari Terakhir
 terakhir_tgl = data['Tanggal'].max()
 seminggu_lalu = terakhir_tgl - pd.Timedelta(days=7)
 avg_7_hari = data[data['Tanggal'] >= seminggu_lalu]['Gula Darah'].mean()
-
-# Hitung Rata-rata Keseluruhan & Terkini
 avg_total = data['Gula Darah'].mean()
 last_record = data.iloc[-1]
 
@@ -125,7 +97,7 @@ with col3:
 with col4:
     kategori = "Normal" if last_record['Gula Darah'] < 140 else ("Waspada" if last_record['Gula Darah'] <= 199 else "Tinggi")
     warna = "green" if kategori == "Normal" else ("orange" if kategori == "Waspada" else "red")
-    st.markdown(f"**Status Terakhir:** <br><span style='color:{warna}; font-size: 20px; font-weight: bold;'>{kategori}</span>", unsafe_allow_html=True)
+    st.markdown(f"**Status Terakhir:**<br><span style='color:{warna}; font-size: 20px; font-weight: bold;'>{kategori}</span>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -134,81 +106,70 @@ tab_tren, tab_mingguan, tab_tabel = st.tabs(["📈 Tren Gula Darah", "📅 Rata-
 
 with tab_tren:
     st.subheader("Tren Kadar Gula Darah (Garis Berkelanjutan)")
-    
     if not filtered_df.empty:
-        # Urutkan data secara kronologis (berdasarkan tanggal dan waktu input)
-        df_plot = filtered_df.sort_values(by=['Tanggal', 'Timestamp']).copy()
+        # Urutkan berdasarkan tanggal & inisial waktu (A s.d. G)
+        df_plot = filtered_df.sort_values(by=['Tanggal', 'waktu_kode']).copy()
         
-        # Buat label sumbu X yang informatif: Tanggal - Waktu Sesi
-        df_plot['Label_Pemeriksaan'] = (
-            df_plot['Tanggal'].dt.strftime('%d/%m/%Y') + " - " + df_plot['Waktu'].fillna('')
-        )
-
-        # 1. Buat grafik garis bersambung (Spline / Smooth Line)
+        # Format Sumbu X: Tanggal + Inisial Huruf (misal: "04/09 (A)")
+        df_plot['Label_X'] = df_plot['Tanggal'].dt.strftime('%d/%m') + " (" + df_plot['waktu_kode'] + ")"
+        
         fig_tren = go.Figure()
 
-        # Garis utama yang menyambungkan seluruh titik
+        # Garis data gula darah
         fig_tren.add_trace(go.Scatter(
-            x=df_plot['Label_Pemeriksaan'],
+            x=df_plot['Label_X'],
             y=df_plot['Gula Darah'],
-            mode='lines+markers',  # Garis menyambung + titik penanda
-            line=dict(
-                color='#2b7bba',    # Warna biru seperti di Google Sheets Anda
-                width=3,
-                shape='spline',     # 'spline' membuat garis melengkung halus / luwes
-                smoothing=1.3
-            ),
-            marker=dict(
-                size=9,
-                symbol='star-diamond',  # Bentuk bintang/diamond seperti di Google Sheets
-                color='#2b7bba',
-                line=dict(width=1, color='white')
-            ),
+            mode='lines+markers',
+            line=dict(color='#2b7bba', width=3, shape='spline', smoothing=1.2),
+            marker=dict(size=9, symbol='star-diamond', color='#2b7bba', line=dict(width=1, color='white')),
             name='Kadar Gula Darah',
             hovertemplate=(
-                "<b>%{x}</b><br>" +
+                "<b>%{customdata[0]}</b><br>" +
+                "Sesi: <b>%{customdata[1]}</b> (%{x})<br>" +
                 "Kadar Gula: <b>%{y} mg/dL</b><br>" +
-                "Menu: %{customdata[0]}<br>" +
-                "Catatan: %{customdata[1]}<extra></extra>"
+                "Menu: %{customdata[2]}<br>" +
+                "Catatan: %{customdata[3]}<extra></extra>"
             ),
-            customdata=df_plot[['Menu Makanan', 'Catatan']].fillna('-').values
+            customdata=df_plot[['Tanggal', 'Waktu', 'Menu Makanan', 'Catatan']].fillna('-').assign(
+                Tanggal=df_plot['Tanggal'].dt.strftime('%d/%m/%Y')
+            ).values
         ))
 
-        # 2. Garis batas target/waspada
+        # Garis batas target/waspada
         fig_tren.add_hline(
-            y=180, 
-            line_dash="dot", 
-            line_color="#e67e22", 
-            annotation_text="Batas Aman Setelah Makan (180 mg/dL)",
-            annotation_position="top left"
+            y=180, line_dash="dot", line_color="#e67e22",
+            annotation_text="Batas Aman Sesudah Makan (180 mg/dL)", annotation_position="top left"
         )
         fig_tren.add_hline(
-            y=130, 
-            line_dash="dot", 
-            line_color="#27ae60", 
-            annotation_text="Batas Sebelum Makan (130 mg/dL)",
-            annotation_position="bottom left"
+            y=130, line_dash="dot", line_color="#27ae60",
+            annotation_text="Batas Sebelum Makan (130 mg/dL)", annotation_position="bottom left"
         )
 
-        # 3. Kustomisasi Layout agar rapi di layar HP & Laptop
         fig_tren.update_layout(
             yaxis_title="Gula Darah (mg/dL)",
-            xaxis_title="",
+            xaxis_title="Tanggal & Inisial Waktu (A - G)",
             hovermode="x unified",
             yaxis=dict(range=[0, max(df_plot['Gula Darah'].max() + 50, 250)]),
-            xaxis=dict(tickangle=-45),  # Miringkan label tanggal agar terbaca jelas
+            xaxis=dict(tickangle=-45),
             margin=dict(l=20, r=20, t=30, b=80),
             template="plotly_white"
         )
 
         st.plotly_chart(fig_tren, use_container_width=True)
+        
+        # Keterangan Legenda Inisial Huruf
+        st.info("""
+        **Keterangan Inisial Waktu Sumbu X:**
+        * **A**: Sebelum Makan Pagi | **B**: Sesudah Makan Pagi
+        * **C**: Sebelum Makan Siang | **D**: Sesudah Makan Siang
+        * **E**: Sebelum Makan Malam | **F**: Sesudah Makan Malam
+        * **G**: Sebelum Tidur Malam
+        """)
     else:
         st.info("Tidak ada data pada filter yang dipilih.")
 
 with tab_mingguan:
     st.subheader("Rata-rata Gula Darah per Pekan")
-    
-    # Pengelompokan data mingguan yang sudah diperbaiki
     df_weekly = (
         data.groupby('Minggu')['Gula Darah']
         .agg(['mean', 'count'])
@@ -218,7 +179,6 @@ with tab_mingguan:
     
     if not df_weekly.empty:
         max_y = max(df_weekly['Rata-rata'].max() + 50, 250) if pd.notnull(df_weekly['Rata-rata'].max()) else 250
-        
         fig_weekly = px.bar(
             df_weekly,
             x='Pekan',
@@ -237,6 +197,13 @@ with tab_mingguan:
 
 with tab_tabel:
     st.subheader("Riwayat Detail Respon Form")
-    kolom_tampil = ['Tanggal', 'Waktu', 'Gula Darah', 'Menu Makanan', 'Olahraga', 'Catatan']
+    kolom_tampil = ['Tanggal', 'waktu_kode', 'Waktu', 'Gula Darah', 'Menu Makanan', 'Olahraga', 'Catatan']
     kolom_ada = [c for c in kolom_tampil if c in filtered_df.columns]
-    st.dataframe(filtered_df[kolom_ada].sort_values(by='Tanggal', ascending=False), use_container_width=True)
+    
+    tabel_display = filtered_df[kolom_ada].sort_values(by=['Tanggal', 'waktu_kode'], ascending=[False, False]).copy()
+    tabel_display['Tanggal'] = tabel_display['Tanggal'].dt.strftime('%d/%m/%Y')
+    
+    st.dataframe(
+        tabel_display.rename(columns={'waktu_kode': 'Kode'}),
+        use_container_width=True
+    )
