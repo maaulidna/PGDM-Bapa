@@ -14,11 +14,11 @@ st.set_page_config(
 # Pemetaan Waktu ke Inisial Huruf Alfabetis (A - G)
 MAPPING_WAKTU = {
     'Sebelum Makan Pagi': 'A',
-    'Sesudah Makan Pagi': 'B',
+    'Setelah Makan Pagi': 'B',
     'Sebelum Makan Siang': 'C',
-    'Sesudah Makan Siang': 'D',
+    'Setelah Makan Siang': 'D',
     'Sebelum Makan Malam': 'E',
-    'Sesudah Makan Malam': 'F',
+    'Setelah Makan Malam': 'F',
     'Sebelum Tidur Malam': 'G'
 }
 
@@ -138,7 +138,7 @@ with tab_tren:
         # Garis batas target/waspada
         fig_tren.add_hline(
             y=180, line_dash="dot", line_color="#e67e22",
-            annotation_text="Batas Aman Sesudah Makan (180 mg/dL)", annotation_position="top left"
+            annotation_text="Batas Aman Setelah Makan (180 mg/dL)", annotation_position="top left"
         )
         fig_tren.add_hline(
             y=130, line_dash="dot", line_color="#27ae60",
@@ -160,9 +160,9 @@ with tab_tren:
         # Keterangan Legenda Inisial Huruf
         st.info("""
         **Keterangan Inisial Waktu Sumbu X:**
-        * **A**: Sebelum Makan Pagi | **B**: Sesudah Makan Pagi
-        * **C**: Sebelum Makan Siang | **D**: Sesudah Makan Siang
-        * **E**: Sebelum Makan Malam | **F**: Sesudah Makan Malam
+        * **A**: Sebelum Makan Pagi | **B**: Setelah Makan Pagi
+        * **C**: Sebelum Makan Siang | **D**: Setelah Makan Siang
+        * **E**: Sebelum Makan Malam | **F**: Setelah Makan Malam
         * **G**: Sebelum Tidur Malam
         """)
     else:
