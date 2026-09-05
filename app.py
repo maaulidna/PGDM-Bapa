@@ -111,9 +111,7 @@ with tab_tren:
         df_plot = filtered_df.sort_values(by=['Tanggal', 'Timestamp']).copy()
         
         # Buat label sumbu X yang informatif: Tanggal - Waktu Sesi
-        df_plot['Label_Pemeriksaan'] = (
-            df_plot['Tanggal'].dt.strftime('%d/%m/%Y') + " - " + df_plot['Waktu'].fillna('')
-        )
+        df_plot['Label_Pemeriksaan'] = df_plot['Tanggal'].dt.strftime('%d/%m')
 
         # 1. Buat grafik garis bersambung (Spline / Smooth Line)
         fig_tren = go.Figure()
