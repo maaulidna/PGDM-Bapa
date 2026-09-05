@@ -52,7 +52,7 @@ except Exception as e:
 
 # 3. Header
 st.title("🩺 Pemantauan Gula Darah Mandiri Sugiyo RH")
-st.caption("Pengobatan: oral + insulin/nDosis: 3x metformin 500 mg, 2x gliclazide 80mg, 1x insulin ryzodeg")
+st.caption("Pengobatan: oral + insulin | Dosis: 3x metformin 500 mg, 2x gliclazide 80mg, 1x insulin ryzodeg")
 
 # 4. Filter di Sidebar
 with st.sidebar:
