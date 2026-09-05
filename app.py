@@ -111,37 +111,46 @@ with tab_tren:
         df_plot = filtered_df.sort_values(by=['Tanggal', 'Timestamp']).copy()
         
         # Buat label sumbu X yang informatif: Tanggal - Waktu Sesi
-        df_plot['Label_Pemeriksaan'] = df_plot['Tanggal'].dt.strftime('%d/%m')
+        df_plot = filtered_df.sort_values(by=['Tanggal', 'Timestamp']).copy()
 
         # 1. Buat grafik garis bersambung (Spline / Smooth Line)
         fig_tren = go.Figure()
 
         # Garis utama yang menyambungkan seluruh titik
         fig_tren.add_trace(go.Scatter(
-            x=df_plot['Label_Pemeriksaan'],
-            y=df_plot['Gula Darah'],
-            mode='lines+markers',  # Garis menyambung + titik penanda
-            line=dict(
-                color='#2b7bba',    # Warna biru seperti di Google Sheets Anda
-                width=3,
-                shape='spline',     # 'spline' membuat garis melengkung halus / luwes
-                smoothing=1.3
-            ),
-            marker=dict(
-                size=9,
-                symbol='star-diamond',  # Bentuk bintang/diamond seperti di Google Sheets
-                color='#2b7bba',
-                line=dict(width=1, color='white')
-            ),
-            name='Kadar Gula Darah',
-            hovertemplate=(
-                "<b>%{x}</b><br>" +
-                "Kadar Gula: <b>%{y} mg/dL</b><br>" +
-                "Menu: %{customdata[0]}<br>" +
-                "Catatan: %{customdata[1]}<extra></extra>"
-            ),
-            customdata=df_plot[['Menu Makanan', 'Catatan']].fillna('-').values
-        ))
+    x=df_plot['Tanggal'],
+    y=df_plot['Gula Darah'],
+    mode='lines+markers',
+
+    line=dict(
+        color='#2b7bba',
+        width=3,
+        shape='spline',
+        smoothing=1.3
+    ),
+
+    marker=dict(
+        size=9,
+        symbol='star-diamond',
+        color='#2b7bba',
+        line=dict(width=1, color='white')
+    ),
+
+    name='Kadar Gula Darah',
+
+    hovertemplate=(
+        "<b>%{x|%d/%m/%Y}</b><br>" +
+        "Waktu: <b>%{customdata[0]}</b><br>" +
+        "Kadar Gula: <b>%{y} mg/dL</b><br>" +
+        "Menu: %{customdata[1]}<br>" +
+        "Catatan: %{customdata[2]}" +
+        "<extra></extra>"
+    ),
+
+    customdata=df_plot[
+        ['Waktu', 'Menu Makanan', 'Catatan']
+    ].fillna('-').values
+))
 
         # 2. Garis batas target/waspada
         fig_tren.add_hline(
@@ -161,14 +170,22 @@ with tab_tren:
 
         # 3. Kustomisasi Layout agar rapi di layar HP & Laptop
         fig_tren.update_layout(
-            yaxis_title="Gula Darah (mg/dL)",
-            xaxis_title="",
-            hovermode="x unified",
-            yaxis=dict(range=[0, max(df_plot['Gula Darah'].max() + 50, 250)]),
-            xaxis=dict(tickangle=-45),  # Miringkan label tanggal agar terbaca jelas
-            margin=dict(l=20, r=20, t=30, b=80),
-            template="plotly_white"
-        )
+    yaxis_title="Gula Darah (mg/dL)",
+    xaxis_title="Tanggal",
+    hovermode="closest",
+
+    yaxis=dict(
+        range=[0, max(df_plot['Gula Darah'].max() + 50, 250)]
+    ),
+
+    xaxis=dict(
+        tickformat="%d/%m",
+        tickangle=0
+    ),
+
+    margin=dict(l=20, r=20, t=30, b=50),
+    template="plotly_white"
+)
 
         st.plotly_chart(fig_tren, use_container_width=True)
     else:
