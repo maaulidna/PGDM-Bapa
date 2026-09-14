@@ -29,21 +29,28 @@ SHEET_NAME = "Form%20Responses%201"
 
 @st.cache_data(ttl=60)
 def load_data():
-    csv_url = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={SHEET_NAME}"
-    df = pd.read_csv(csv_url)
+  csv_url = f'https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={SHEET_NAME}'
+  df = pd.read_csv(csv_url)
 
-    df['Tanggal'] = pd.to_datetime(df['Tanggal'], errors='coerce', dayfirst=True)
-    df['Gula Darah'] = pd.to_numeric(df['Gula Darah'], errors='coerce')
-    df = df.dropna(subset=['Tanggal', 'Gula Darah'])
+  # Perbaikan pada konversi Tanggal: gunakan format='mixed'
+  df['Tanggal'] = pd.to_datetime(df['Tanggal'], format='mixed', errors='coerce')
+  df['Gula Darah'] = pd.to_numeric(df['Gula Darah'], errors='coerce')
+  df = df.dropna(subset=['Tanggal', 'Gula Darah'])
 
-    df['Waktu_Bersih'] = df['Waktu'].astype(str).str.strip()
-    df['waktu_kode'] = df['Waktu_Bersih'].map(MAPPING_WAKTU).fillna('Z')
-    df = df.sort_values(by=['Tanggal', 'waktu_kode'])
+  df['Waktu_Bersih'] = df['Waktu'].astype(str).str.strip()
+  df['waktu_kode'] = df['Waktu_Bersih'].map(MAPPING_WAKTU).fillna('Z')
+  df = df.sort_values(by=['Tanggal', 'waktu_kode'])
 
-    df['Minggu'] = df['Tanggal'].dt.to_period('W').apply(
-        lambda r: f"{r.start_time.strftime('%d/%m')} - {r.end_time.strftime('%d/%m')}"
-    )
-    return df
+  df['Minggu'] = (
+      df['Tanggal']
+      .dt.to_period('W')
+      .apply(
+          lambda r: (
+              f"{r.start_time.strftime('%d/%m')} - {r.end_time.strftime('%d/%m')}"
+          )
+      )
+  )
+  return df
 
 try:
     data = load_data()
